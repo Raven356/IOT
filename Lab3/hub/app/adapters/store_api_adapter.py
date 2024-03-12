@@ -18,4 +18,10 @@ class StoreApiAdapter(StoreGateway):
 
     def save_data(self, processed_agent_data_batch: List[ProcessedAgentData]):
         # Make a POST request to the Store API endpoint with the processed data
+        data = json.dumps(processed_agent_data_batch)
+        r = req.post(STORE_API_BASE_URL, data)
+        if r.status_code == 200:
+            return 0
+        else:
+            return {r.status_code, r.text}
         pass
