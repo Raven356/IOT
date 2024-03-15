@@ -93,6 +93,19 @@ services:
       hub_store:
       hub_redis:
 
+  fake_agent:
+    container_name: agent
+    build: ../../../Lab1/
+    depends_on:
+      - mqtt
+    environment:
+      MQTT_BROKER_HOST: "mqtt"
+      MQTT_BROKER_PORT: 1883
+      MQTT_TOPIC: "agent_data_topic"
+      DELAY: 0.1
+    networks:
+      - mqtt_network
+
 networks:
   mqtt_network:
   db_network:
