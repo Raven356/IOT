@@ -6,23 +6,35 @@ from file_datasource import FileDatasource
 import config
 import logging
 
-logging.basicConfig(filename='agent.log', level=logging.DEBUG)
+# logging.basicConfig(filename='agent.log', level=logging.DEBUG)
+# Configure logging settings
+logging.basicConfig(
+    level=logging.INFO,  # Set the log level to INFO (you can use logging.DEBUG for more detailed logs)
+    format="[%(asctime)s] [%(levelname)s] [%(module)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Output log messages to the console
+        logging.FileHandler("app.log"),  # Save log messages to a file
+    ],
+)
+
 
 def connect_mqtt(broker, port):
     """Create MQTT client"""
     print(f"CONNECT TO {broker}:{port}")
+
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             print(f"Connected to MQTT Broker ({broker}:{port})!")
         else:
             print("Failed to connect {broker}:{port}, return code %d\n", rc)
-            exit(rc) # Stop execution
-            
+            exit(rc)  # Stop execution
+
     client = mqtt_client.Client()
     client.on_connect = on_connect
     client.connect(broker, port)
     client.loop_start()
     return client
+
 
 def publish(client, topic, datasource, delay):
     datasource.startReading()
@@ -40,14 +52,18 @@ def publish(client, topic, datasource, delay):
         else:
             print(f"Failed to send message to topic {topic}")
 
+
 def run():
-# Prepare mqtt client
+    # Prepare mqtt client
     client = connect_mqtt(config.MQTT_BROKER_HOST, config.MQTT_BROKER_PORT)
     logging.debug(f"Client: {client}")
     # Prepare datasource
-    datasource = FileDatasource("data/accelerometer.csv", "data/gps.csv", "data/parking.csv")
+    datasource = FileDatasource(
+        "data/accelerometer.csv", "data/gps.csv", "data/parking.csv"
+    )
     # Infinity publish data
     publish(client, config.MQTT_TOPIC, datasource, config.DELAY)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run()
