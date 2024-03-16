@@ -105,22 +105,6 @@ class FileDatasource:
 
             return AggregatedData(accelerometer, gps, parking, timestamp, self.uuid)
 
-    def skipEmpty(self, reader):
-        while True:
-            val = next(reader, None)
-            if val or val is None:
-                return val
-
-    def countLines(self, reader):
-        count = 0
-        while self.skipEmpty(reader) is not None:
-            count += 1
-        self.reopen(reader)
-        return count
-
-    def reopen(self, reader):
-        pass
-
     def startReading(self, *args, **kwargs):
         if self.accelerometer_reader is not None or self.gps_reader is not None:
             raise ValueError("Files already opened.")
