@@ -6,7 +6,7 @@ from domain.parking import Parking
 from CustomReader import CustomReader
 
 from typing import Iterable
-
+import uuid
 import logging
 
 # logging.basicConfig(filename='agent.log', level=logging.DEBUG)
@@ -26,6 +26,7 @@ class FileDatasource:
         self.parking_reader = None
         self.life_time_count = None
         self.time_index = None
+        self.uuid = str(uuid.uuid4())
 
     def read(self) -> AggregatedData | None:
         if (
@@ -102,7 +103,7 @@ class FileDatasource:
 
             self.time_index += 1
 
-            return AggregatedData(accelerometer, gps, parking, timestamp)
+            return AggregatedData(accelerometer, gps, parking, timestamp, self.uuid)
 
     def skipEmpty(self, reader):
         while True:

@@ -11,3 +11,4 @@ class AggregatedData:
     gps: Gps
     parking: Parking
     timestamp: datetime
+    user_id: str

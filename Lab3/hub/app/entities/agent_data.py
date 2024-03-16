@@ -15,6 +15,7 @@ class GpsData(BaseModel):
 
 
 class AgentData(BaseModel):
+    user_id: str
     accelerometer: AccelerometerData
     gps: GpsData
     timestamp: datetime

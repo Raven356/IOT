@@ -21,14 +21,11 @@ from config import (
 )
 
 # Configure logging settings
-logging.basicConfig(
-    level=logging.INFO,  # Set the log level to INFO (you can use logging.DEBUG for more detailed logs)
-    format="[%(asctime)s] [%(levelname)s] [%(module)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),  # Output log messages to the console
-        logging.FileHandler("app.log"),  # Save log messages to a file
-    ],
-)
+logger = logging.getLogger()
+c_handler = logging.StreamHandler()
+logger.addHandler(c_handler)
+logger.setLevel(logging.INFO)
+
 # Create an instance of the Redis using the configuration
 redis_client = Redis(host=REDIS_HOST, port=REDIS_PORT)
 # Create an instance of the StoreApiAdapter using the configuration
@@ -70,7 +67,6 @@ def on_connect(client, userdata, flags, rc, properties):
 
 
 def on_message(client, userdata, msg):
-    batch_data = None
     try:
         payload: str = msg.payload.decode("utf-8")
         # Create ProcessedAgentData instance with the received data
@@ -88,7 +84,10 @@ def on_message(client, userdata, msg):
                     redis_client.lpop("processed_agent_data")
                 )
                 processed_agent_data_batch.append(processed_agent_data)
-        store_adapter.save_data(processed_agent_data_batch=processed_agent_data_batch)
+            logger.debug(f"processed_data in hub.main: {processed_agent_data_batch}")
+            store_adapter.save_data(
+                processed_agent_data_batch=processed_agent_data_batch
+            )
         return {"status": "ok"}
     except Exception as e:
         logging.info(f"Error processing MQTT message: {e}")
