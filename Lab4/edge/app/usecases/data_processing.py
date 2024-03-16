@@ -3,7 +3,6 @@ from app.entities.agent_data import AgentData
 from app.entities.processed_agent_data import ProcessedAgentData
 
 import numpy as np
-from math import abs
 from numpy.linalg import lstsq
 
 data_history = []
