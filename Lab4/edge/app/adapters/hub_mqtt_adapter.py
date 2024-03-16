@@ -30,7 +30,7 @@ class HubMqttAdapter(HubGateway):
         if status == 0:
             return True
         else:
-            print(f"Failed to send message to topic {self.topic}")
+            print(f"Hub_MQTT: Failed to send message to topic {self.topic}")
             return False
 
     @staticmethod

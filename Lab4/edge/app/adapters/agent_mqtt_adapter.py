@@ -49,7 +49,7 @@ class AgentMQTTAdapter(AgentGateway):
             if not self.hub_gateway.save_data(processed_data):
                 logging.error("Hub is not available")
         except Exception as e:
-            logging.error(f"Error processing MQTT message: {e}")
+            logging.error(f"Agent_MQTT: Error processing MQTT message: {e}")
 
     def connect(self):
         self.client.on_connect = self.on_connect
