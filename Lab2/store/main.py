@@ -56,7 +56,7 @@ processed_agent_data = Table(
     metadata,
     Column("id", Integer, primary_key=True, index=True),
     Column("road_state", String),
-    Column("user_id", Integer),
+    Column("user_id", String),
     Column("x", Float),
     Column("y", Float),
     Column("z", Float),
