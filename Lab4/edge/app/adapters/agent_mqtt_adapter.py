@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import logging
+import uuid
 import paho.mqtt.client as mqtt
+from paho.mqtt.enums import CallbackAPIVersion
 from app.interfaces.agent_gateway import AgentGateway
 from app.entities.agent_data import AgentData, GpsData
 from app.usecases.data_processing import process_agent_data
@@ -21,11 +23,12 @@ class AgentMQTTAdapter(AgentGateway):
         self.broker_host = broker_host
         self.broker_port = broker_port
         self.topic = topic
-        self.client = mqtt.Client()
+        client_id = str(uuid.uuid4())
+        self.client = mqtt.Client(CallbackAPIVersion.VERSION2, client_id)
         # Hub
         self.hub_gateway = hub_gateway
 
-    def on_connect(self, client, userdata, flags, rc):
+    def on_connect(self, client, userdata, flags, rc, properties):
         if rc == 0:
             logging.info("Connected to MQTT broker")
             self.client.subscribe(self.topic)

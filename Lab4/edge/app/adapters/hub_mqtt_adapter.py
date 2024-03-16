@@ -1,7 +1,9 @@
 import logging
+import uuid
 
 import requests as requests
 from paho.mqtt import client as mqtt_client
+from paho.mqtt.enums import CallbackAPIVersion
 
 from app.entities.processed_agent_data import ProcessedAgentData
 from app.interfaces.hub_gateway import HubGateway
@@ -36,14 +38,15 @@ class HubMqttAdapter(HubGateway):
         """Create MQTT client"""
         print(f"CONNECT TO {broker}:{port}")
 
-        def on_connect(client, userdata, flags, rc):
+        def on_connect(client, userdata, flags, rc, properties):
             if rc == 0:
                 print(f"Connected to MQTT Broker ({broker}:{port})!")
             else:
                 print("Failed to connect {broker}:{port}, return code %d\n", rc)
                 exit(rc)  # Stop execution
 
-        client = mqtt_client.Client()
+        client_id = str(uuid.uuid4())
+        client = mqtt_client.Client(CallbackAPIVersion.VERSION2, client_id)
         client.on_connect = on_connect
         client.connect(broker, port)
         client.loop_start()
