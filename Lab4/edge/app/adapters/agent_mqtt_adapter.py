@@ -8,6 +8,8 @@ from app.entities.agent_data import AgentData, GpsData
 from app.usecases.data_processing import process_agent_data
 from app.interfaces.hub_gateway import HubGateway
 
+logger = logging.getLogger()
+
 
 class AgentMQTTAdapter(AgentGateway):
     def __init__(
@@ -47,7 +49,7 @@ class AgentMQTTAdapter(AgentGateway):
             if not self.hub_gateway.save_data(processed_data):
                 logging.error("Hub is not available")
         except Exception as e:
-            logging.info(f"Error processing MQTT message: {e}")
+            logging.error(f"Error processing MQTT message: {e}")
 
     def connect(self):
         self.client.on_connect = self.on_connect

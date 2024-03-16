@@ -15,14 +15,10 @@ from config import (
 
 if __name__ == "__main__":
     # Configure logging settings
-    logging.basicConfig(
-        level=logging.INFO,  # Set the log level to INFO (you can use logging.DEBUG for more detailed logs)
-        format="[%(asctime)s] [%(levelname)s] [%(module)s] %(message)s",
-        handlers=[
-            logging.StreamHandler(),  # Output log messages to the console
-            logging.FileHandler("app.log"),  # Save log messages to a file
-        ],
-    )
+    logger = logging.getLogger()
+    c_handler = logging.StreamHandler()
+    logger.addHandler(c_handler)
+    logger.setLevel(logging.INFO)
     # Create an instance of the StoreApiAdapter using the configuration
     # hub_adapter = HubHttpAdapter(
     #     api_base_url=HUB_URL,
