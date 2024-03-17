@@ -1,7 +1,14 @@
 import asyncio
 import json
 from typing import Set, Dict, List, Any
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Body, Depends
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    WebSocket,
+    WebSocketDisconnect,
+    Body,
+    Depends,
+)
 from sqlalchemy import (
     create_engine,
     MetaData,
@@ -29,6 +36,14 @@ from config import (
     POSTGRES_PASSWORD,
 )
 
+import logging
+
+logger = logging.getLogger()
+c_handler = logging.StreamHandler()
+logger.addHandler(c_handler)
+logger.setLevel(logging.INFO)
+
+
 # FastAPI app setup
 app = FastAPI()
 # SQLAlchemy setup
@@ -41,7 +56,7 @@ processed_agent_data = Table(
     metadata,
     Column("id", Integer, primary_key=True, index=True),
     Column("road_state", String),
-    Column("user_id", Integer),
+    Column("user_id", String),
     Column("x", Float),
     Column("y", Float),
     Column("z", Float),
@@ -49,7 +64,8 @@ processed_agent_data = Table(
     Column("longitude", Float),
     Column("timestamp", DateTime),
 )
-SessionLocal = sessionmaker( bind=engine)
+SessionLocal = sessionmaker(bind=engine)
+
 
 # SQLAlchemy model
 class ProcessedAgentDataInDB(BaseModel):
@@ -77,7 +93,7 @@ class GpsData(BaseModel):
 
 
 class AgentData(BaseModel):
-    user_id: int
+    user_id: str
     accelerometer: AccelerometerData
     gps: GpsData
     timestamp: datetime
@@ -130,6 +146,7 @@ async def send_data_to_subscribers(user_id: int, data):
 
 @app.post("/processed_agent_data/")
 async def create_processed_agent_data(data: List[ProcessedAgentData]):
+    logger.debug(f"{data}")
     values = [
         {
             "road_state": item.road_state,
@@ -139,7 +156,7 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
             "z": item.agent_data.accelerometer.z,
             "latitude": item.agent_data.gps.latitude,
             "longitude": item.agent_data.gps.longitude,
-            "timestamp": item.agent_data.timestamp
+            "timestamp": item.agent_data.timestamp,
         }
         for item in data
     ]
@@ -159,7 +176,9 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
 def read_processed_agent_data(processed_agent_data_id: int):
     db = SessionLocal()
     try:
-        q = select(processed_agent_data).where(processed_agent_data.c.id == processed_agent_data_id)
+        q = select(processed_agent_data).where(
+            processed_agent_data.c.id == processed_agent_data_id
+        )
         res = db.execute(q).fetchone()
         if res:
             return ProcessedAgentDataInDB(
@@ -171,7 +190,7 @@ def read_processed_agent_data(processed_agent_data_id: int):
                 z=res[5],  # index 5 corresponds to the 'z' column
                 latitude=res[6],  # index 6 corresponds to the 'latitude' column
                 longitude=res[7],  # index 7 corresponds to the 'longitude' column
-                timestamp=res[8]  # index 8 corresponds to the 'timestamp' column
+                timestamp=res[8],  # index 8 corresponds to the 'timestamp' column
             )
         else:
             raise HTTPException(status_code=404, detail="ProcessedAgentData not found")
@@ -179,7 +198,6 @@ def read_processed_agent_data(processed_agent_data_id: int):
         db.close()
     # Get data by id
     pass
-
 
 
 @app.get("/processed_agent_data/", response_model=list[ProcessedAgentDataInDB])
@@ -208,7 +226,6 @@ def list_processed_agent_data():
     pass
 
 
-
 @app.put(
     "/processed_agent_data/{processed_agent_data_id}",
     response_model=ProcessedAgentDataInDB,
@@ -222,7 +239,7 @@ def update_processed_agent_data(processed_agent_data_id: int, data: ProcessedAge
         "z": data.agent_data.accelerometer.z,
         "latitude": data.agent_data.gps.latitude,
         "longitude": data.agent_data.gps.longitude,
-        "timestamp": data.agent_data.timestamp
+        "timestamp": data.agent_data.timestamp,
     }
     query = (
         update(processed_agent_data)
@@ -242,9 +259,8 @@ def update_processed_agent_data(processed_agent_data_id: int, data: ProcessedAge
     response_model=ProcessedAgentDataInDB,
 )
 def delete_processed_agent_data(processed_agent_data_id: int):
-    query = (
-        delete(processed_agent_data)
-        .where(processed_agent_data.c.id == processed_agent_data_id)
+    query = delete(processed_agent_data).where(
+        processed_agent_data.c.id == processed_agent_data_id
     )
     conn = engine.connect()
     result = conn.execute(query)
