@@ -136,14 +136,14 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
 
 # Function to send data to subscribed users
-async def send_data_to_subscribers(user_id: str, data: List[ProcessedAgentData]):
+async def send_data_to_subscribers(user_id: str, data: List):
     for websocket in subscriptions[user_id]:
         await websocket.send_json(
             json.dumps(data, default=pydantic_core.to_jsonable_python)
         )
 
 
-async def send_data_websocket(data: List[ProcessedAgentData]):
+async def send_data_websocket(data: List):
     for user_id in subscriptions.keys():
         await send_data_to_subscribers(user_id=user_id, data=data)
 
@@ -173,7 +173,7 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
     result = conn.execute(query)
     conn.commit()
     # Send data to subscribers
-    await send_data_websocket(data)
+    await send_data_websocket(values)
 
 
 @app.get(

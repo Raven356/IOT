@@ -10,7 +10,7 @@ from config import STORE_HOST, STORE_PORT
 # Pydantic models
 class ProcessedAgentData(BaseModel):
     road_state: str
-    user_id: int
+    user_id: str
     x: float
     y: float
     z: float
@@ -32,7 +32,7 @@ class ProcessedAgentData(BaseModel):
 
 
 class Datasource:
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: str):
         self.index = 0
         self.user_id = user_id
         self.connection_status = None
