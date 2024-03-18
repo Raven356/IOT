@@ -117,12 +117,12 @@ class ProcessedAgentData(BaseModel):
 
 
 # WebSocket subscriptions
-subscriptions: Dict[int, Set[WebSocket]] = {}
+subscriptions: Dict[str, Set[WebSocket]] = {}
 
 
 # FastAPI WebSocket endpoint
 @app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
     await websocket.accept()
     if user_id not in subscriptions:
         subscriptions[user_id] = set()
@@ -135,7 +135,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 
 
 # Function to send data to subscribed users
-async def send_data_to_subscribers(user_id: int, data):
+async def send_data_to_subscribers(user_id: str, data):
     for websocket in subscriptions[user_id]:
         await websocket.send_json(json.dumps(data))
 
