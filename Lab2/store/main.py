@@ -35,6 +35,7 @@ from config import (
     POSTGRES_USER,
     POSTGRES_PASSWORD,
 )
+import pydantic_core
 
 import logging
 
@@ -117,12 +118,12 @@ class ProcessedAgentData(BaseModel):
 
 
 # WebSocket subscriptions
-subscriptions: Dict[int, Set[WebSocket]] = {}
+subscriptions: Dict[str, Set[WebSocket]] = {}
 
 
 # FastAPI WebSocket endpoint
 @app.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: int):
+async def websocket_endpoint(websocket: WebSocket, user_id: str):
     await websocket.accept()
     if user_id not in subscriptions:
         subscriptions[user_id] = set()
@@ -135,10 +136,16 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
 
 
 # Function to send data to subscribed users
-async def send_data_to_subscribers(user_id: int, data):
-    if user_id in subscriptions:
-        for websocket in subscriptions[user_id]:
-            await websocket.send_json(json.dumps(data))
+async def send_data_to_subscribers(user_id: str, data: List):
+    for websocket in subscriptions[user_id]:
+        await websocket.send_json(
+            json.dumps(data, default=pydantic_core.to_jsonable_python)
+        )
+
+
+async def send_data_websocket(data: List):
+    for user_id in subscriptions.keys():
+        await send_data_to_subscribers(user_id=user_id, data=data)
 
 
 # FastAPI CRUD endpoints
@@ -146,6 +153,7 @@ async def send_data_to_subscribers(user_id: int, data):
 
 @app.post("/processed_agent_data/")
 async def create_processed_agent_data(data: List[ProcessedAgentData]):
+    # Insert data to database
     logger.debug(f"{data}")
     values = [
         {
@@ -164,9 +172,8 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
     conn = engine.connect()
     result = conn.execute(query)
     conn.commit()
-    # Insert data to database
     # Send data to subscribers
-    pass
+    await send_data_websocket(values)
 
 
 @app.get(
