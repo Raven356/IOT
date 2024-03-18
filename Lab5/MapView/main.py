@@ -17,7 +17,10 @@ class MapViewApp(App):
     def __init__(self, **kwargs):
         super().__init__()
         # додати необхідні змінні
+        self.mapview = MapView()
+        self.line_layer = LineMapLayer()
         self.markers = []
+        self.trail_coords = []
         self.zoom_coords = {"min_x": 1e7, "min_y": 1e7, "max_x": -1e7, "max_y": -1e7}
         self.car_coords = {"x": 0, "y": 0}
         self.car_marker = MapMarker(
@@ -25,6 +28,8 @@ class MapViewApp(App):
             lon=self.car_coords["y"],
             source="images/car.png",
         )
+        # Zoom markers
+        # Only required for debugging purpose
         self.zoom_marker1 = MapMarker(lat=0, lon=0, source="images/pothole.png")
         self.zoom_marker2 = MapMarker(lat=0, lon=0, source="images/pothole.png")
         self.zoom_marker3 = MapMarker(lat=0, lon=0, source="images/pothole.png")
@@ -39,6 +44,9 @@ class MapViewApp(App):
         # We're assuming, that we don't have any information on boot
         # So we just update map
         Clock.schedule_interval(self.update, 1)
+
+    def on_stop(self):
+        self.datasource.close()
 
     def update(self, *args):
         """
@@ -56,9 +64,9 @@ class MapViewApp(App):
         }
         logger.debug(f"New map center coords: {coords}")
         max_delta = max(
-            (self.zoom_coords["max_x"] - self.zoom_coords["min_x"]),
-            (self.zoom_coords["max_y"] - self.zoom_coords["min_y"])
-            * math.cos(math.radians(coords["x"])),
+            (self.zoom_coords["max_x"] - self.zoom_coords["min_x"])
+            * math.cos(math.radians(coords["y"])),
+            (self.zoom_coords["max_y"] - self.zoom_coords["min_y"]),
         )
         if self.car_coords["x"] != 0:
             self.mapview.center_on(coords["x"], coords["y"])
@@ -75,7 +83,7 @@ class MapViewApp(App):
         self.update_car_marker()
 
         # [DEBUG] Show zoom coordinates
-        self.show_zoom_coordinates()
+        # self.show_zoom_coordinates()
 
         # [DEBUG]: Check car coords
         if (
@@ -86,8 +94,23 @@ class MapViewApp(App):
         ):
             logger.debug("Car coords is outsize of zoom box")
 
-        # Update potholes
-        # Update road bumps
+        # Update car trail
+        for v in new_points:
+            point = (v[1], v[0])
+            if point not in self.trail_coords:
+                self.line_layer.add_point(point)
+                self.trail_coords.append(point)
+
+            if point not in self.markers:
+                # Update potholes
+                if v[2] == "Bad":
+                    self.set_pothole_marker(point)
+
+                # Update road bumps
+                elif v[2] == "Normal":
+                    self.set_bump_marker(point)
+
+                self.markers.append(point)
 
     def recalculate_map_center(self, points: List[Tuple[float, float, str]]):
 
@@ -152,18 +175,22 @@ class MapViewApp(App):
             self.zoom_marker4.lon = self.zoom_coords["max_y"]
             self.mapview.add_marker(self.zoom_marker4)
 
-    def set_pothole_marker(self, point):
+    def set_pothole_marker(self, point: Tuple[float, float]):
         """
         Встановлює маркер для ями
         :param point: GPS координати
         """
+        pothole = MapMarker(lat=point[0], lon=point[1], source="images/pothole.png")
+        self.mapview.add_marker(pothole)
         pass
 
-    def set_bump_marker(self, point):
+    def set_bump_marker(self, point: Tuple[float, float]):
         """
         Встановлює маркер для лежачого поліцейського
         :param point: GPS координати
         """
+        bump = MapMarker(lat=point[0], lon=point[1], source="images/bump.png")
+        self.mapview.add_marker(bump)
         pass
 
     def build(self):
@@ -171,10 +198,10 @@ class MapViewApp(App):
         Ініціалізує мапу MapView(zoom, lat, lon)
         :return: мапу
         """
-        self.mapview = MapView()
         self.mapview.zoom = 6
         self.mapview.lat = 48.560
         self.mapview.lon = 31.443
+        self.mapview.add_layer(self.line_layer, mode="scatter")
         return self.mapview
 
 
