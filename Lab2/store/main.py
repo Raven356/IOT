@@ -35,6 +35,7 @@ from config import (
     POSTGRES_USER,
     POSTGRES_PASSWORD,
 )
+import pydantic_core
 
 import logging
 
@@ -135,14 +136,16 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
 
 # Function to send data to subscribed users
-async def send_data_to_subscribers(user_id: str, data):
+async def send_data_to_subscribers(user_id: str, data: List[ProcessedAgentData]):
     for websocket in subscriptions[user_id]:
-        await websocket.send_json(json.dumps(data))
+        await websocket.send_json(
+            json.dumps(data, default=pydantic_core.to_jsonable_python)
+        )
 
 
-async def send_data_websocket(data):
+async def send_data_websocket(data: List[ProcessedAgentData]):
     for user_id in subscriptions.keys():
-        _ = send_data_to_subscribers(user_id=user_id, data=data)
+        await send_data_to_subscribers(user_id=user_id, data=data)
 
 
 # FastAPI CRUD endpoints
@@ -170,7 +173,7 @@ async def create_processed_agent_data(data: List[ProcessedAgentData]):
     result = conn.execute(query)
     conn.commit()
     # Send data to subscribers
-    _ = send_data_websocket(values)
+    await send_data_websocket(data)
 
 
 @app.get(
