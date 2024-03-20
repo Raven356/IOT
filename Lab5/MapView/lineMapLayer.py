@@ -2,7 +2,12 @@ from kivy_garden.mapview import MapLayer, MapMarker
 from kivy.graphics import Color, Line
 from kivy.graphics.context_instructions import Translate, Scale, PushMatrix, PopMatrix
 from kivy_garden.mapview.utils import clamp
-from kivy_garden.mapview.constants import (MIN_LONGITUDE, MAX_LONGITUDE, MIN_LATITUDE, MAX_LATITUDE)
+from kivy_garden.mapview.constants import (
+    MIN_LONGITUDE,
+    MAX_LONGITUDE,
+    MIN_LATITUDE,
+    MAX_LATITUDE,
+)
 from math import radians, log, tan, cos, pi
 
 
@@ -33,7 +38,7 @@ class LineMapLayer(MapLayer):
 
     def add_point(self, point):
         if self._coordinates is None:
-            #self._coordinates = [point]
+            # self._coordinates = [point]
             self._coordinates = []
         self._coordinates.append(point)
         # self._coordinates = [self._coordinates[-1], point]
@@ -56,12 +61,18 @@ class LineMapLayer(MapLayer):
         # Offset all points by the coordinates of the first point,
         # to keep coordinates closer to zero.
         # (and therefore avoid some float precision issues when drawing lines)
-        self._line_points_offset = (self.get_x(self.coordinates[0][1]),
-                                    self.get_y(self.coordinates[0][0]))
+        self._line_points_offset = (
+            self.get_x(self.coordinates[0][1]),
+            self.get_y(self.coordinates[0][0]),
+        )
         # Since lat is not a linear transform we must compute manually
-        self._line_points = [(self.get_x(lon) - self._line_points_offset[0],
-                              self.get_y(lat) - self._line_points_offset[1])
-                             for lat, lon in self.coordinates]
+        self._line_points = [
+            (
+                self.get_x(lon) - self._line_points_offset[0],
+                self.get_y(lat) - self._line_points_offset[1],
+            )
+            for lat, lon in self.coordinates
+        ]
 
     def invalidate_line_points(self):
         self._line_points = None
@@ -86,9 +97,11 @@ class LineMapLayer(MapLayer):
 
         # Must redraw when the zoom changes
         # as the scatter transform resets for the new tiles
-        if self.zoom != map_view.zoom or \
-                self.lon != round(map_view.lon, 7) or \
-                self.lat != round(map_view.lat, 7):
+        if (
+            self.zoom != map_view.zoom
+            or self.lon != round(map_view.lon, 7)
+            or self.lat != round(map_view.lat, 7)
+        ):
             map_source = map_view.map_source
             self.ms = pow(2.0, map_view.zoom) * map_source.dp_tile_size
             self.invalidate_line_points()
