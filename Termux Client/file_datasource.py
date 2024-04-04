@@ -4,6 +4,7 @@ from domain.accelerometer import Accelerometer
 from domain.gps import Gps
 from domain.parking import Parking
 from termux import Sensors, API
+from termux.android import execute
 
 from typing import Iterable
 import uuid
@@ -56,7 +57,7 @@ class FileDatasource:
             # )
             # gps_data = self.gps_reader.getCurOrNext(gps_data_new_ind)
             # parking_data = self.parking_reader.getCurOrNext(parking_data_new_ind)
-            accelerometer_data = Sensors.sensorsData(self.accelerometer_filename)
+            accelerometer_data = self.sensorsData(self.accelerometer_filename)
             gps_data = API.location()
 
             if accelerometer_data is None or gps_data is None:
@@ -80,8 +81,8 @@ class FileDatasource:
 
                 # Parse GPS data
                 gps_values = [
-                    float(gps_data[1]["longitude"]),
                     float(gps_data[1]["latitude"]),
+                    float(gps_data[1]["longitude"]),
                 ]
 
             except (ValueError, IndexError):
@@ -100,6 +101,24 @@ class FileDatasource:
             # self.time_index += 1
 
             return AggregatedData(accelerometer, gps, timestamp, self.uuid)
+
+    def sensorsData(self, *args):
+        """
+        Output specific sensor(s) data. (JSON)
+        You can pass multiple sensor names as arguments.
+        As live data is not useful when calling from
+        python, only one reading is retrieved by this method.
+        If you need continous data, you can create a
+        loop in python
+        """
+        sname = tuple(args)
+        if not sname:
+            raise ValueError(
+                "At least one sensor name required.\nFor finding sensor name call sensors() method."
+            )
+        else:
+            sensorNames = ",".join(sname)
+            return execute(["termux-sensor", "-n", "1", "-d", "100", "-s", sensorNames])
 
     def startReading(self, *args, **kwargs):
         pass
