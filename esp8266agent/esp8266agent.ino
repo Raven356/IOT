@@ -2,6 +2,8 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <LSM303.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 #include <C:\\secret\\wifipass.txt> // ssid and pass
 //const char *ssid = "ssid";
@@ -16,13 +18,17 @@ const bool print_debug = false;
 double longitude = 50.466329; 
 double latitude = 30.512865;
 
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "ntp1.time.in.ua");
+
 WiFiClient wclient;
 PubSubClient client(wclient);
 
 LSM303 compass;
 
 char buf[80];
-char json[1024];
+char time_buf[200];
+char json[2048];
 
 void setup()
 {
@@ -57,6 +63,9 @@ void setup_wifi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+
+  timeClient.begin();
+  timeClient.update();
 }
 
 void reconnect() {
@@ -97,16 +106,27 @@ void loop()
     const double speed = 0.00005;
     longitude += cos(a*M_PI/180.0)*speed, latitude += sin(a*M_PI/180.0)*speed;
 
+    {
+      time_t epochTime = timeClient.getEpochTime();
+      struct tm *ptm = gmtime ((time_t *)&epochTime); 
+
+      snprintf(time_buf, sizeof(time_buf), 
+        "%04d-%02d-%02dT%02d:%02d:%02d.000000",
+        ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec
+      );
+      //Serial.println(time_buf);
+    }
+
     snprintf(json, sizeof(json), 
       "{\"accelerometer\":{\"x\":%d,\"y\":%d,\"z\":%d},"\
       "\"gps\":{\"longitude\":%.10f, \"latitude\":%.10f},"\
-      "\"timestamp\": \"2024-04-03T19:50:12.374470\","\
+      "\"timestamp\": \"%s\","\
       "\"user_id\":\"esp8266\"}",
       compass.a.x, compass.a.y, compass.a.z,
-      longitude, latitude);
+      longitude, latitude, time_buf);
     
     client.publish("agent_data_topic", json);
 
-    delay(1);
+    delay(10);
   }
 }
